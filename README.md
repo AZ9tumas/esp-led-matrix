@@ -25,11 +25,14 @@ Optional: 1000uF cap across VCC/GND, 330 ohm resistor in series on DIN.
 ## Usage
 On boot the matrix shows its IP. From any device on the same WiFi:
 
-```
-GET http://<esp-ip>/show?text=hello
-```
+| Request | Does |
+|---|---|
+| `/show?text=hello` | Show text (short stays still, long scrolls) |
+| `/countdown?s=90` | Count down (1 to 5999 s), then flash DONE |
+| `/clock` | Show time (IST, synced over the internet) |
+| `/brightness?v=5` | Brightness 0 to 15 |
 
-Returns `ok`. Short text stays still, long text scrolls. ESP32 only joins 2.4 GHz WiFi.
+e.g. `http://<esp-ip>/countdown?s=60`. ESP32 only joins 2.4 GHz WiFi.
 
 ## Web UI (phone, via Termux)
 ```
