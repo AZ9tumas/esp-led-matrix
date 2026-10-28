@@ -21,6 +21,7 @@ void setText(const String& s) {
 }
 
 void handleShow() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");  // let the web UI read the reply
   if (!server.hasArg("text")) { server.send(400, "text/plain", "missing text"); return; }
   setText(server.arg("text"));
   server.send(200, "text/plain", "ok");

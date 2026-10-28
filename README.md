@@ -30,3 +30,12 @@ GET http://<esp-ip>/show?text=hello
 ```
 
 Returns `ok`. Short text stays still, long text scrolls. ESP32 only joins 2.4 GHz WiFi.
+
+## Web UI (phone, via Termux)
+```
+pkg install python git
+git clone https://github.com/AZ9tumas/esp-led-matrix
+cd esp-led-matrix/web
+python -m http.server 8000
+```
+Open `http://localhost:8000` in the phone browser, enter the ESP32 IP once (it's remembered), type text, press Send.

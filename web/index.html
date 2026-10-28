@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LED Matrix</title>
+<style>
+  :root, [data-theme="tokyo"] {
+    --bg: #1a1b26; --panel: #24283b; --fg: #c0caf5; --muted: #565f89;
+    --accent: #7aa2f7; --ok: #9ece6a; --err: #f7768e; --border: #3b4261;
+  }
+  [data-theme="light"] {
+    --bg: #fafafa; --panel: #ffffff; --fg: #383a42; --muted: #a0a1a7;
+    --accent: #4078f2; --ok: #50a14f; --err: #e45649; --border: #e5e5e6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg);
+    font: 16px/1.4 system-ui, sans-serif; display: flex; justify-content: center;
+    padding: 24px 16px;
+  }
+  main { width: 100%; max-width: 420px; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  h1 { font-size: 20px; margin: 0; }
+  .themes button { padding: 6px 10px; font-size: 13px; background: var(--panel); color: var(--fg); border: 1px solid var(--border); }
+  .themes button.on { border-color: var(--accent); color: var(--accent); }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
+  input {
+    width: 100%; padding: 12px; font-size: 16px; border-radius: 8px;
+    background: var(--panel); color: var(--fg); border: 1px solid var(--border); outline: none;
+  }
+  input:focus { border-color: var(--accent); }
+  button { border-radius: 8px; cursor: pointer; font: inherit; }
+  #send {
+    width: 100%; margin-top: 16px; padding: 14px; font-size: 16px; font-weight: 600;
+    background: var(--accent); color: var(--bg); border: none;
+  }
+  #send:disabled { opacity: .6; }
+  #status { margin-top: 14px; min-height: 22px; font-size: 14px; }
+  .ok { color: var(--ok); } .err { color: var(--err); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>LED Matrix</h1>
+    <div class="themes">
+      <button data-t="tokyo">Tokyo Night</button>
+      <button data-t="light">One Light</button>
+    </div>
+  </header>
+
+  <label for="ip">ESP32 IP (shown on the matrix at boot)</label>
+  <input id="ip" placeholder="192.168.43.100" inputmode="decimal" autocomplete="off">
+
+  <label for="text">Text</label>
+  <input id="text" placeholder="hello" maxlength="190" autocomplete="off">
+
+  <button id="send">Send</button>
+  <div id="status"></div>
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const store = {
+    get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }
+  };
+
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    document.querySelectorAll('.themes button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+    store.set('theme', t);
+  }
+  document.querySelectorAll('.themes button').forEach(b => b.onclick = () => setTheme(b.dataset.t));
+  setTheme(store.get('theme') || 'tokyo');
+
+  $('ip').value = store.get('ip') || '';
+
+  async function send() {
+    const ip = $('ip').value.trim(), text = $('text').value;
+    const st = $('status');
+    if (!ip) { st.className = 'err'; st.textContent = 'Enter the ESP32 IP'; return; }
+    if (!text) { st.className = 'err'; st.textContent = 'Type some text'; return; }
+    store.set('ip', ip);
+    $('send').disabled = true; st.className = ''; st.textContent = 'Sending...';
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 5000);
+      const r = await fetch(`http://${ip}/show?text=${encodeURIComponent(text)}`, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!r.ok) throw new Error(`ESP32 replied ${r.status}`);
+      st.className = 'ok'; st.textContent = `Shown: "${text}"`;
+    } catch (e) {
+      st.className = 'err';
+      st.textContent = e.name === 'AbortError' ? 'No reply. Check the IP and that you are on the same WiFi.' : e.message;
+    } finally {
+      $('send').disabled = false;
+    }
+  }
+
+  $('send').onclick = send;
+  $('text').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+</script>
+</body>
+</html>
