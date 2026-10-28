@@ -32,6 +32,8 @@ On boot the matrix shows its IP. From any device on the same WiFi:
 | `/clock` | Show time (IST, synced over the internet) |
 | `/brightness?v=5` | Brightness 0 to 15 |
 
+The web UI also has **Weather**: it looks up a city via Open-Meteo (free, no key) and sends e.g. `Prayagraj 24C Clear` to `/show`.
+
 e.g. `http://<esp-ip>/countdown?s=60`. ESP32 only joins 2.4 GHz WiFi.
 
 ## Web UI (phone, via Termux)

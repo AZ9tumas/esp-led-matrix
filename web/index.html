@@ -91,6 +91,14 @@
   </section>
 
   <section>
+    <label for="city">Weather (city)</label>
+    <div class="row">
+      <input id="city" placeholder="Prayagraj" autocomplete="off">
+      <button class="go" id="weather">Show</button>
+    </div>
+  </section>
+
+  <section>
     <label for="bright">Brightness <span id="bv"></span></label>
     <input id="bright" type="range" min="0" max="15">
   </section>
@@ -147,6 +155,33 @@
     if (!(s >= 1 && s <= 5999)) return status('err', 'Seconds must be 1 to 5999');
     call(`/countdown?s=${s}`, `Counting down from ${s}s`);
   }
+
+  // Open-Meteo: free, no API key. The phone fetches it, then sends plain text to the ESP32.
+  const WX = [[0,'Clear'],[3,'Cloudy'],[48,'Fog'],[57,'Drizzle'],[67,'Rain'],[77,'Snow'],
+              [82,'Showers'],[86,'Snow'],[99,'Storm']];
+  const wxName = c => (WX.find(([max]) => c <= max) || [0, ''])[1];
+
+  async function weather() {
+    const city = $('city').value.trim();
+    if (!city) return status('err', 'Type a city');
+    store.set('city', city);
+    status('', 'Getting weather...');
+    let line;
+    try {
+      const g = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)).json();
+      if (!g.results || !g.results.length) return status('err', `City "${city}" not found`);
+      const { name, latitude, longitude } = g.results[0];
+      const w = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`)).json();
+      line = `${name} ${Math.round(w.current.temperature_2m)}C ${wxName(w.current.weather_code)}`;
+    } catch (e) {
+      return status('err', 'Weather fetch failed. Is the phone online?');
+    }
+    call(`/show?text=${encodeURIComponent(line)}`, `Shown: "${line}"`);
+  }
+
+  $('city').value = store.get('city') || '';
+  $('weather').onclick = weather;
+  $('city').addEventListener('keydown', e => { if (e.key === 'Enter') weather(); });
 
   $('sendText').onclick = sendText;
   $('text').addEventListener('keydown', e => { if (e.key === 'Enter') sendText(); });
