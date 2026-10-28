@@ -4,8 +4,8 @@
 #include <MD_MAX72xx.h>
 #include <SPI.h>
 
-const char* SSID = "your_wifi";
-const char* PASS = "your_password";
+const char* SSID = "ok";
+const char* PASS = "palindrome@121";
 
 MD_Parola P(MD_MAX72XX::FC16_HW, 5, 4);  // CS=D5, 4 modules
 WebServer server(80);
